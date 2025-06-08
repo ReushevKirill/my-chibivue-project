@@ -1,4 +1,5 @@
 import { ReactiveEffect } from '../reactivity/effect'
+import { Component } from './component'
 import { normalizeVNode, Text, VNode, VNodeProps } from './vnode'
 
 export interface RendererOptions<
@@ -25,7 +26,7 @@ export interface RendererNode {
 export interface RendererElement extends RendererNode {}
 
 export type RootRenderFunction<HostElement = RendererElement> = (
-	message: string,
+	vnode: Component,
 	container: HostElement
 ) => void
 
@@ -37,22 +38,6 @@ export function createRenderer(options: RendererOptions) {
 		setText: hostSetText,
 		insert: hostInsert,
 	} = options
-
-	function renderVNode(vnode: VNode | string) {
-		if (typeof vnode === 'string') return hostCreateText(vnode)
-		const el = hostCreateElement(vnode.type)
-
-		Object.entries(vnode.props).forEach(([key, value]) => {
-			hostPatchProp(el, key, value)
-		})
-
-		for (const child of vnode.children) {
-			const childEl = renderVNode(child)
-			hostInsert(childEl, el)
-		}
-
-		return el
-	}
 
 	const patch = (n1: VNode | null, n2: VNode, container: RendererElement) => {
 		const { type } = n2
@@ -80,7 +65,7 @@ export function createRenderer(options: RendererOptions) {
 		const { type, props } = vnode
 		el = vnode.el = hostCreateElement(type as string)
 
-		mountChildren(vnode.children, el)
+		mountChildren(vnode.children as VNode[], el)
 
 		if (props) {
 			for (const key in props) {
